@@ -46,3 +46,14 @@ class Personality(Base):
     system_prompt = Column(Text)
     created_by = Column(String)  # admin email or user id
     created_at = Column(DateTime, default=datetime.utcnow)
+
+class VideoTask(Base):
+    __tablename__ = "video_tasks"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(String)
+    prompt = Column(String, nullable=False)
+    model = Column(String, nullable=False)
+    status = Column(String, default="processing")
+    video_url = Column(String)
+    created_at = Column(DateTime, default=datetime.utcnow)

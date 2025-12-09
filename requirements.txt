@@ -2,11 +2,13 @@ fastapi
 uvicorn
 sqlalchemy
 asyncpg
+pydantic
 python-multipart
 pillow
-openai
-requests
-psycopg2-binary
 python-dotenv
+requests
+openai>=1.13.3
+aiohttp
+ffmpeg-python
 PyJWT
 pytesseract

@@ -22,6 +22,7 @@ from app.routes.document_routes import router as document_router
 from app.routes.three_d_routes import router as three_d_router
 from app.routes.admin_routes import router as admin_router
 
+
 # ==========================================================
 # Initialize FastAPI App
 # ==========================================================
@@ -67,6 +68,7 @@ app.include_router(audio_router, prefix="/audio", tags=["Audio / Whisper"])
 app.include_router(document_router, prefix="/documents", tags=["Document AI"])
 app.include_router(three_d_router, prefix="/3d", tags=["3D Models"])
 app.include_router(admin_router, prefix="/admin", tags=["Admin Tools"])
+
 
 
 # ==========================================================

@@ -14,7 +14,7 @@ from app.config import settings
 # ROUTERS
 from app.routes.auth_routes import router as auth_router
 from app.routes.chat_routes import router as chat_router
-from app.routes.vision_routes import router as vision_router
+from app.routes.vision_routes import router as vision_router  
 from app.routes.images_routes import router as images_router
 from app.routes.video_routes import router as video_router
 from app.routes.audio_routes import router as audio_router
@@ -67,6 +67,7 @@ app.include_router(audio_router, prefix="/audio", tags=["Audio / Whisper"])
 app.include_router(document_router, prefix="/documents", tags=["Document AI"])
 app.include_router(three_d_router, prefix="/3d", tags=["3D Models"])
 app.include_router(admin_router, prefix="/admin", tags=["Admin Tools"])
+
 
 # ==========================================================
 # ROOT ENDPOINT

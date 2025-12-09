@@ -1,74 +1,27 @@
+import base64
 from openai import OpenAI
-from PIL import Image
-import pytesseract
-from io import BytesIO
+from app.config import settings
 
-client = OpenAI()
+client = OpenAI(api_key=settings.OPENAI_API_KEY)
 
-def generate_caption(image_bytes: bytes):
+def analyze_image_with_openai(image_bytes: bytes, prompt: str = "Describe this image"):
     """
-    Uses OpenAI GPT-4.1 Vision to describe image.
+    Sends an image + text prompt to OpenAI Vision (gpt-4o-mini).
     """
-    result = client.chat.completions.create(
-        model="gpt-4.1",
+
+    encoded_image = base64.b64encode(image_bytes).decode("utf-8")
+
+    response = client.chat.completions.create(
+        model="gpt-4o-mini",
         messages=[
             {
                 "role": "user",
                 "content": [
-                    {"type": "input_text", "text": "Describe this image in detail."},
-                    {"type": "input_image", "image": image_bytes}
+                    {"type": "text", "text": prompt},
+                    {"type": "image_url", "image_url": f"data:image/jpeg;base64,{encoded_image}"}
                 ]
             }
         ]
     )
 
-    return result.choices[0].message["content"]
-
-
-def extract_text(image_bytes: bytes):
-    """
-    OCR using Tesseract + fallback to OpenAI OCR.
-    """
-    try:
-        img = Image.open(BytesIO(image_bytes))
-        text = pytesseract.image_to_string(img)
-        if text.strip():
-            return text
-    except:
-        pass
-
-    # Fallback to OpenAI OCR
-    result = client.chat.completions.create(
-        model="gpt-4.1",
-        messages=[
-            {
-                "role": "user",
-                "content": [
-                    {"type": "input_text", "text": "Extract text from this image."},
-                    {"type": "input_image", "image": image_bytes}
-                ]
-            }
-        ]
-    )
-
-    return result.choices[0].message["content"]
-
-
-def analyze_document(image_bytes: bytes):
-    """
-    GPT-4.1 Vision document understanding.
-    """
-    result = client.chat.completions.create(
-        model="gpt-4.1",
-        messages=[
-            {
-                "role": "user",
-                "content": [
-                    {"type": "input_text", "text": "Analyze the document, extract key data, summarize it, and structure it."},
-                    {"type": "input_image", "image": image_bytes}
-                ]
-            }
-        ]
-    )
-
-    return result.choices[0].message["content"]
+    return response.choices[0].message["content"]

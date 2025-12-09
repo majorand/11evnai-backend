@@ -1,38 +1,16 @@
-from fastapi import APIRouter, File, UploadFile, Depends
-from app.services.vision_service import (
-    generate_caption,
-    extract_text,
-    analyze_document
-)
-from app.utils.supabase_jwt import get_current_user
+from fastapi import APIRouter, UploadFile, File, HTTPException
+from app.services.vision_service import analyze_image_with_openai
 
 router = APIRouter()
 
-@router.post("/vision/caption")
-async def caption_image(
+@router.post("/analyze")
+async def analyze_image(
     file: UploadFile = File(...),
-    user=Depends(get_current_user)
+    prompt: str = "Describe this image"
 ):
-    img_bytes = await file.read()
-    caption = generate_caption(img_bytes)
-    return {"caption": caption, "brand": "11evnai"}
-
-
-@router.post("/vision/ocr")
-async def ocr_image(
-    file: UploadFile = File(...),
-    user=Depends(get_current_user)
-):
-    img_bytes = await file.read()
-    text = extract_text(img_bytes)
-    return {"text": text, "brand": "11evnai"}
-
-
-@router.post("/vision/document")
-async def document_analysis(
-    file: UploadFile = File(...),
-    user=Depends(get_current_user)
-):
-    img_bytes = await file.read()
-    analysis = analyze_document(img_bytes)
-    return {"analysis": analysis, "brand": "11evnai"}
+    try:
+        image_bytes = await file.read()
+        result = analyze_image_with_openai(image_bytes, prompt)
+        return {"result": result}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))

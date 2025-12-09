@@ -13,4 +13,5 @@ ffmpeg-python
 PyJWT
 pytesseract
 psycopg[binary]>=3.3.2
+rembg[binary]
 

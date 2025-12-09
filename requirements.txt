@@ -8,3 +8,5 @@ google-generativeai
 requests
 Pillow
 ffmpeg-python
+sqlalchemy
+asyncpg

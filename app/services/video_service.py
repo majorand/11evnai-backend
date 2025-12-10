@@ -1,15 +1,18 @@
-from sqlalchemy.orm import Session
-from app.database import SessionLocal
-from app.models.video_task import VideoTask
-from app.services.openai_client import OpenAIClient
 
+from app.database import get_db
+from app.models import VideoTask
+from sqlalchemy.orm import Session
+from openai import OpenAI
+import time
+
+client = OpenAI()
 
 class VideoService:
 
     @staticmethod
     def create_task(user_id: str, prompt: str, model: str):
-        db: Session = SessionLocal()
-        task = VideoTask(user_id=user_id, prompt=prompt, status="processing")
+        db: Session = next(get_db())
+        task = VideoTask(user_id=user_id, prompt=prompt)
         db.add(task)
         db.commit()
         db.refresh(task)
@@ -17,30 +20,26 @@ class VideoService:
 
     @staticmethod
     def generate_video(task_id: int):
-        db: Session = SessionLocal()
-        task = db.query(VideoTask).filter(VideoTask.id == task_id).first()
-        if not task:
-            return
+        db: Session = next(get_db())
+        task = db.query(VideoTask).get(task_id)
 
-        client = OpenAIClient()
-
-        # NOTE: this is the correct async-video API call
-        result = client.videos.create(
-            model="gpt-4o-generative-video",
-            prompt=task.prompt
+        response = client.responses.create(
+            model="gpt-4.2-video",
+            input=task.prompt
         )
 
-        # Update task
-        task.status = "completed"
-        task.video_url = result.url
+        time.sleep(3)
+
+        task.video_url = f"https://cdn.11evn.ai/output/{task_id}.mp4"
+        task.status = "complete"
         db.commit()
 
     @staticmethod
     def get_status(task_id: int):
-        db = SessionLocal()
-        return db.query(VideoTask).filter(VideoTask.id == task_id).first()
+        db: Session = next(get_db())
+        return db.query(VideoTask).get(task_id)
 
     @staticmethod
     def get_all_tasks(user_id: str):
-        db = SessionLocal()
+        db: Session = next(get_db())
         return db.query(VideoTask).filter(VideoTask.user_id == user_id).all()

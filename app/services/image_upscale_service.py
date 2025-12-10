@@ -1,19 +1,14 @@
-from PIL import Image
-from io import BytesIO
-import torch
-from realesrgan import RealESRGAN
+# app/services/image_upscale_service.py
+from openai import OpenAI
+import base64
 
-def upscale_image(image_bytes: bytes):
-    img = Image.open(BytesIO(image_bytes)).convert("RGB")
+client = OpenAI()
 
-    device = "cuda" if torch.cuda.is_available() else "cpu"
+async def upscale_image(image_bytes: bytes) -> bytes:
+    response = client.images.edit(
+        model="gpt-image-1",
+        image=image_bytes,
+        prompt="Upscale this image to higher resolution with improved clarity."
+    )
 
-    model = RealESRGAN(device, scale=4)
-    model.load_weights('weights/RealESRGAN_x4.pth')
-
-    upscaled = model.predict(img)
-
-    buffer = BytesIO()
-    upscaled.save(buffer, format="PNG")
-    buffer.seek(0)
-    return buffer
+    return base64.b64decode(response.data[0].b64_json)

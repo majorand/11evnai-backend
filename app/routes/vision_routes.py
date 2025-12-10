@@ -10,7 +10,7 @@ async def analyze_image(
 ):
     try:
         image_bytes = await file.read()
-        result = analyze_image_with_openai(image_bytes, prompt)
+        result = await analyze_image_with_openai(image_bytes, prompt)
         return {"result": result}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

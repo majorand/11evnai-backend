@@ -1,11 +1,14 @@
-from PIL import Image
-from io import BytesIO
-import requests
+# app/services/image_face_service.py
+from openai import OpenAI
+import base64
 
-# Using CodeFormer via HF inference API (optional)
-HF_CODEFORMER_URL = "https://api-inference.huggingface.co/models/sczhou/CodeFormer"
+client = OpenAI()
 
-def enhance_face(image_bytes: bytes):
-    headers = {"Authorization": f"Bearer YOUR_HF_API_KEY"}
-    response = requests.post(HF_CODEFORMER_URL, headers=headers, data=image_bytes)
-    return BytesIO(response.content)
+async def enhance_face(image_bytes: bytes) -> bytes:
+    response = client.images.edit(
+        model="gpt-image-1",
+        image=image_bytes,
+        prompt="Enhance the face: improve detail, clarity, and natural skin texture. Do not alter identity."
+    )
+
+    return base64.b64decode(response.data[0].b64_json)

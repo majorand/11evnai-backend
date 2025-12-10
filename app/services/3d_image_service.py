@@ -1,15 +1,27 @@
-import requests
-from io import BytesIO
+# app/services/three_d_image_service.py
+from openai import OpenAI
+import base64
 
-HF_ZERO123_URL = "https://api-inference.huggingface.co/models/stabilityai/stable-zero123"
-HF_API_KEY = "YOUR_HUGGINGFACE_API_KEY"
+client = OpenAI()
 
-def image_to_3d(image_bytes: bytes):
-    headers = {
-        "Authorization": f"Bearer {HF_API_KEY}",
-        "Content-Type": "application/octet-stream"
-    }
+async def image_to_3d(image_bytes: bytes) -> bytes:
+    b64_image = base64.b64encode(image_bytes).decode()
 
-    response = requests.post(HF_ZERO123_URL, headers=headers, data=image_bytes)
+    response = client.chat.completions.create(
+        model="gpt-4o-3d",
+        messages=[
+            {
+                "role": "user",
+                "content": [
+                    {"type": "text", "text": "Generate a 3D model from this image."},
+                    {
+                        "type": "image_url",
+                        "image_url": f"data:image/png;base64,{b64_image}"
+                    }
+                ]
+            }
+        ]
+    )
 
-    return BytesIO(response.content)
+    model_b64 = response.choices[0].message["model"]
+    return base64.b64decode(model_b64)

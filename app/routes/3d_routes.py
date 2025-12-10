@@ -9,17 +9,30 @@ router = APIRouter()
 @router.post("/3d/text")
 async def text_3d(
     prompt: str = Form(...),
-    user=Depends(get_current_user)
+    user = Depends(get_current_user)
 ):
-    model = text_to_3d(prompt)
-    return StreamingResponse(model, media_type="model/gltf-binary")
+    # async-safe call
+    model_bytes = await text_to_3d(prompt)
+
+    # GLB format (binary)
+    return StreamingResponse(
+        model_bytes,
+        media_type="model/gltf-binary"
+    )
 
 
 @router.post("/3d/image")
 async def image_3d(
     file: UploadFile = File(...),
-    user=Depends(get_current_user)
+    user = Depends(get_current_user)
 ):
-    image_bytes = await file.read()
-    model = image_to_3d(image_bytes)
-    return StreamingResponse(model, media_type="model/obj")
+    img_bytes = await file.read()
+
+    # async-safe call
+    model_bytes = await image_to_3d(img_bytes)
+
+    # OBJ format (plaintext)
+    return StreamingResponse(
+        model_bytes,
+        media_type="model/obj"
+    )

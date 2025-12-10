@@ -1,95 +1,85 @@
-<<<<<<< HEAD
-from app.database import SessionLocal
+from datetime import datetime
 from app.models.video_task import VideoTask
-from app.services.openai_client import openai_client
-=======
+from app.database import SessionLocal
+from app.openai_client import client
+import os
 
-from app.database import get_db
-from app.models import VideoTask
-from sqlalchemy.orm import Session
-from openai import OpenAI
-import time
-
-client = OpenAI()
->>>>>>> efdaf38d3cfbdfee6be2ae4448fa8893f1f02c60
 
 class VideoService:
 
     @staticmethod
-<<<<<<< HEAD
     def create_task(user_id: str, prompt: str, model: str = "gpt-4.2-video"):
+        """Create a new video-generation task."""
         db = SessionLocal()
-        task = VideoTask(
-            user_id=user_id,
-            prompt=prompt,
-            model=model,
-            status="processing"
-        )
-=======
-    def create_task(user_id: str, prompt: str, model: str):
-        db: Session = next(get_db())
-        task = VideoTask(user_id=user_id, prompt=prompt)
->>>>>>> efdaf38d3cfbdfee6be2ae4448fa8893f1f02c60
-        db.add(task)
-        db.commit()
-        db.refresh(task)
-        db.close()
-        return task.id
-
-    @staticmethod
-    def generate_video(task_id: int):
-<<<<<<< HEAD
-        db = SessionLocal()
-        task = db.query(VideoTask).filter(VideoTask.id == task_id).first()
-        if not task:
+        try:
+            task = VideoTask(
+                user_id=user_id,
+                prompt=prompt,
+                model=model,
+                status="pending",
+                created_at=datetime.utcnow(),
+            )
+            db.add(task)
+            db.commit()
+            db.refresh(task)
+            return task.id
+        finally:
             db.close()
-            return
-
-        result = openai_client.video.generate(
-            model=task.model,
-            prompt=task.prompt,
-        )
-
-        task.video_url = result.url
-        task.status = "completed"
-
-=======
-        db: Session = next(get_db())
-        task = db.query(VideoTask).get(task_id)
-
-        response = client.responses.create(
-            model="gpt-4.2-video",
-            input=task.prompt
-        )
-
-        time.sleep(3)
-
-        task.video_url = f"https://cdn.11evn.ai/output/{task_id}.mp4"
-        task.status = "complete"
->>>>>>> efdaf38d3cfbdfee6be2ae4448fa8893f1f02c60
-        db.commit()
-        db.close()
 
     @staticmethod
     def get_status(task_id: int):
-<<<<<<< HEAD
+        """Retrieve task from DB."""
         db = SessionLocal()
-        task = db.query(VideoTask).filter(VideoTask.id == task_id).first()
-        db.close()
-        return task
+        try:
+            return db.query(VideoTask).filter(VideoTask.id == task_id).first()
+        finally:
+            db.close()
 
     @staticmethod
     def get_all_tasks(user_id: str):
+        """Return all video tasks created by a user."""
         db = SessionLocal()
-        tasks = db.query(VideoTask).filter(VideoTask.user_id == user_id).all()
-        db.close()
-        return tasks
-=======
-        db: Session = next(get_db())
-        return db.query(VideoTask).get(task_id)
+        try:
+            return db.query(VideoTask).filter(VideoTask.user_id == user_id).order_by(VideoTask.id.desc()).all()
+        finally:
+            db.close()
 
     @staticmethod
-    def get_all_tasks(user_id: str):
-        db: Session = next(get_db())
-        return db.query(VideoTask).filter(VideoTask.user_id == user_id).all()
->>>>>>> efdaf38d3cfbdfee6be2ae4448fa8893f1f02c60
+    def generate_video(task_id: int):
+        """Background job that actually generates the video."""
+        db = SessionLocal()
+        try:
+            task = db.query(VideoTask).filter(VideoTask.id == task_id).first()
+            if not task:
+                return
+
+            task.status = "processing"
+            db.commit()
+
+            # Call OpenAI video API
+            response = client.videos.generate(
+                model=task.model,
+                prompt=task.prompt,
+            )
+
+            # Save output file
+            output_path = f"videos/task_{task.id}.mp4"
+            os.makedirs("videos", exist_ok=True)
+
+            with open(output_path, "wb") as f:
+                f.write(response)
+
+            task.video_url = f"/static/videos/task_{task.id}.mp4"
+            task.status = "completed"
+            task.completed_at = datetime.utcnow()
+
+            db.commit()
+
+        except Exception as e:
+            if task:
+                task.status = "failed"
+                task.error_message = str(e)
+                db.commit()
+
+        finally:
+            db.close()

@@ -1,23 +1,15 @@
-# app/services/video_service.py
-from openai import OpenAI
+from sqlalchemy.orm import Session
 from app.database import SessionLocal
-from app.models.video_model import VideoTask
-import time
+from app.models.video_task import VideoTask
+from app.services.openai_client import OpenAIClient
 
-client = OpenAI()
 
 class VideoService:
 
     @staticmethod
     def create_task(user_id: str, prompt: str, model: str):
-        db = SessionLocal()
-        task = VideoTask(
-            user_id=user_id,
-            prompt=prompt,
-            status="processing",
-            video_url=None,
-            model=model
-        )
+        db: Session = SessionLocal()
+        task = VideoTask(user_id=user_id, prompt=prompt, status="processing")
         db.add(task)
         db.commit()
         db.refresh(task)
@@ -25,35 +17,30 @@ class VideoService:
 
     @staticmethod
     def generate_video(task_id: int):
-        db = SessionLocal()
+        db: Session = SessionLocal()
         task = db.query(VideoTask).filter(VideoTask.id == task_id).first()
+        if not task:
+            return
 
-        try:
-            job = client.videos.generate(
-                model=task.model,
-                prompt=task.prompt
-            )
+        client = OpenAIClient()
 
-            while True:
-                status = client.videos.status(job.id)
-                if status.status == "completed":
-                    break
-                time.sleep(2)
+        # NOTE: this is the correct async-video API call
+        result = client.videos.create(
+            model="gpt-4o-generative-video",
+            prompt=task.prompt
+        )
 
-            task.status = "completed"
-            task.video_url = status.output_url
-
-        except:
-            task.status = "failed"
-
+        # Update task
+        task.status = "completed"
+        task.video_url = result.url
         db.commit()
 
     @staticmethod
-    def get_status(task_id):
+    def get_status(task_id: int):
         db = SessionLocal()
         return db.query(VideoTask).filter(VideoTask.id == task_id).first()
 
     @staticmethod
-    def get_all_tasks(user_id):
+    def get_all_tasks(user_id: str):
         db = SessionLocal()
         return db.query(VideoTask).filter(VideoTask.user_id == user_id).all()

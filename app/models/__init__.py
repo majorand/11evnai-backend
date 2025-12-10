@@ -2,6 +2,7 @@ from sqlalchemy import Column, Integer, String, Text, ForeignKey, DateTime, Bool
 from sqlalchemy.orm import relationship
 from datetime import datetime
 from app.database import Base
+from .video_task import VideoTask
 
 class User(Base):
     __tablename__ = "users"
